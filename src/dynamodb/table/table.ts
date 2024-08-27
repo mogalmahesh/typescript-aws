@@ -9,31 +9,47 @@ import {
   DescribeTableCommandInput,
   ListTablesCommand,
   ListTablesCommandInput,
+  KeySchemaElement,
+  AttributeDefinition,
 } from "@aws-sdk/client-dynamodb"
 
-export async function createTable(tableName: string) {
+export enum DYNAMODB_KEY_DATA_TYPE {
+  STRING = "S",
+  NUMBER = "N",
+  BINARY = "B",
+}
+
+export type DYNAMODB_KEY = {
+  name: string
+  dataType: DYNAMODB_KEY_DATA_TYPE
+}
+
+export async function createTable(tableName: string, hashKey: DYNAMODB_KEY, rangeKey?: DYNAMODB_KEY) {
+  const keySchema: KeySchemaElement[] = [{
+    AttributeName: hashKey.name,
+    KeyType: "HASH",
+  }]
+
+  const attributeDefinitions:  AttributeDefinition[] = [{
+    AttributeName: hashKey.name,
+    AttributeType: hashKey.dataType,
+  }]
+
+  if(rangeKey) {
+    keySchema.push({
+      AttributeName: rangeKey.name,
+      KeyType: "RANGE",
+    })
+    attributeDefinitions.push({
+      AttributeName: rangeKey.name,
+      AttributeType: rangeKey.dataType,
+    })
+  }
+
   const input: CreateTableCommandInput = {
     TableName: tableName,
-    KeySchema: [
-      {
-        AttributeName: "id",
-        KeyType: "HASH",
-      },
-      {
-        AttributeName: "date",
-        KeyType: "RANGE",
-      },
-    ],
-    AttributeDefinitions: [
-      {
-        AttributeName: "id",
-        AttributeType: "S",
-      },
-      {
-        AttributeName: "date",
-        AttributeType: "S",
-      },
-    ],
+    KeySchema: keySchema,
+    AttributeDefinitions: attributeDefinitions,
     BillingMode: "PAY_PER_REQUEST",
     DeletionProtectionEnabled: false,
   }
